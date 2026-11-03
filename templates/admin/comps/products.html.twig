@@ -1,0 +1,25 @@
+ 
+{% set e = _context.entity.instance %}
+
+ 
+ <div class="d-flex flex-column gap-2">
+
+        <!-- Product item -->
+
+        {% for item in e.orderItems %}
+            <div class="d-flex align-items-center gap-2">
+                <img src="/uploads/gallery/{{ item.product.image }}"
+                    class="rounded"
+                    style="width:40px; height:40px; object-fit:cover;">
+                
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">{{ item.product.label }}</div>
+                    <small class="text-muted">Quantité: {{ item.quantity }}</small>
+                    <small class="text-muted">Taille: {{ item.size }}</small> 
+                </div>
+            </div> 
+        {% endfor %}
+        
+        
+
+    </div>

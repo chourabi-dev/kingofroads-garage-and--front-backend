@@ -1,0 +1,34 @@
+{% set status = field.customOptions.get('status') %}
+ 
+{% set e = _context.entity.instance %}
+
+
+<div class="form-group">
+    <div>
+        <select data-id="{{ e.id }}" class="form-select">
+            {% for item in status %}
+                <option {% if item.id == e.status.id %}selected{% endif %} value="{{ item.id }}">{{ item.label }}</option> 
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('change', function(e) {
+        const orderID = e.target.getAttribute("data-id");
+        console.log(orderID);
+        
+        
+            fetch("{{ path('admin_update_order_status') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: orderID,
+                    statusId: e.target.value
+                })
+            });
+        
+    });
+
+</script>
