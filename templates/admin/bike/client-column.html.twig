@@ -1,0 +1,19 @@
+{% set c = entity.instance.client %}
+
+
+ <div class="d-flex align-items-center gap-3"> 
+
+        <div class="flex-grow-1">
+            <div class="fw-bold">
+                {{ c.fullname}} 
+            </div> 
+            <div class="small text-muted">
+                {{  c.email  }}
+            </div> 
+            <div class="small text-muted mt-1">
+                Tel: {{ c.phone }}
+            </div>
+        </div>
+
+    </div>
+ 
