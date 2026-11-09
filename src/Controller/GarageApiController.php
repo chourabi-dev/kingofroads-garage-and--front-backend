@@ -460,10 +460,39 @@ final class GarageApiController extends AbstractController
                 'message' => 'not found.',
             ], Response::HTTP_NOT_FOUND);
         } 
+
+ 
+
+        $data =[];
+
+        foreach ($b->getMaintenances() as $key => $m) {
+            $parts = [];
+            foreach ($m->getLines() as $key => $l) {
+                $parts[] = [
+                    "name"=>$l->getLabel(),
+                    "quantity"=>$l->getQuantity()
+                ];
+            }
+            $data[]=[
+                "date"=>$m->getCreatedAt()->format(DATE_ATOM),
+                "mileage"=>0,
+                "type"=>"",
+                "title"=>"",
+                "description"=>$m->getNote(),
+                "parts"=>$parts,
+                "cost"=>null,
+                "workshop"=>"KING OF ROADS GARAGE",
+                "nextDueMileage"=>0,
+                "nextDueDate"=>null
+
+            ];
+        }
+
+
          
 
 
-        return $this->json([], 201);
+        return $this->json($data, 201);
     }
 
 
