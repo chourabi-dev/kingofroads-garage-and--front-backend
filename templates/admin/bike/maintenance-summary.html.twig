@@ -1,0 +1,35 @@
+{% set bike = entity.instance %}
+
+<div class="mb-2">
+    <a class="btn btn-sm btn-outline-primary"
+       href="{{ ea_url().setController('App\\Controller\\Admin\\BikeCrudController').setAction('history').setEntityId(bike.id) }}">
+        <i class="fa fa-clock-rotate-left"></i> Full bike history
+    </a>
+</div>
+
+{% if bike.maintenances is empty %}
+    <span class="text-muted">No maintenance recorded yet.</span>
+{% else %}
+    <table class="table table-sm align-middle mb-0">
+        <thead>
+        <tr><th>Invoice</th><th>Date</th><th>Actions</th><th class="text-end">Total</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for m in bike.maintenances %}
+            <tr>
+                <td>{{ m.invoiceNumber }}</td>
+                <td>{{ m.createdAt|date('d/m/Y') }}</td>
+                <td class="small">
+                    {% for line in m.lines %}{{ line.quantity }}× {{ line.label }}{{ not loop.last ? ', ' : '' }}{% endfor %}
+                </td>
+                <td class="text-end">{{ m.total|number_format(3, '.', ' ') }} TND</td>
+                <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin_maintenance_invoice', {id: m.id}) }}">
+                        <i class="fa fa-file-pdf"></i> PDF
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}

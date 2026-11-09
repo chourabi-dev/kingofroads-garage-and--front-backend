@@ -51,9 +51,17 @@ class Bike
     #[ORM\OneToMany(targetEntity: BikeReport::class, mappedBy: 'bike')]
     private Collection $bikeReports;
 
+    /**
+     * @var Collection<int, Maintenance>
+     */
+    #[ORM\OneToMany(targetEntity: Maintenance::class, mappedBy: 'bike', cascade: ['remove'])]
+    #[ORM\OrderBy(['createdAt' => 'DESC'])]
+    private Collection $maintenances;
+
     public function __construct()
     {
         $this->bikeReports = new ArrayCollection();
+        $this->maintenances = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -205,6 +213,35 @@ class Bike
             // set the owning side to null (unless already changed)
             if ($bikeReport->getBike() === $this) {
                 $bikeReport->setBike(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Maintenance>
+     */
+    public function getMaintenances(): Collection
+    {
+        return $this->maintenances;
+    }
+
+    public function addMaintenance(Maintenance $maintenance): static
+    {
+        if (!$this->maintenances->contains($maintenance)) {
+            $this->maintenances->add($maintenance);
+            $maintenance->setBike($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMaintenance(Maintenance $maintenance): static
+    {
+        if ($this->maintenances->removeElement($maintenance)) {
+            if ($maintenance->getBike() === $this) {
+                $maintenance->setBike(null);
             }
         }
 

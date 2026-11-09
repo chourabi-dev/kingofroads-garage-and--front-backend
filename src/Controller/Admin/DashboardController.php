@@ -6,6 +6,7 @@ use App\Entity\Bike;
 use App\Entity\BikeBrand;
 use App\Entity\Category;
 use App\Entity\Client;
+use App\Entity\MaintenanceAction;
 use App\Entity\Order;
 use App\Entity\OrderStatus;
 use App\Entity\Product;
@@ -99,6 +100,7 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToCrud('Marque', 'fas fa-list', BikeBrand::class); 
         yield MenuItem::linkToCrud('Clients', 'fas fa-users', Client::class); 
         yield MenuItem::linkToCrud('Bikes', 'fa fa-motorcycle', Bike::class); 
+        yield MenuItem::linkToCrud('Maintenance actions', 'fas fa-wrench', MaintenanceAction::class);
         
         
         

@@ -1,0 +1,92 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Bike history — {{ bike.make.label }} {{ bike.model }} ({{ bike.plate }}){% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn-secondary" href="{{ detail_url }}"><i class="fa fa-arrow-left"></i> Bike details</a>
+    <a class="btn btn-primary" href="{{ add_url }}"><i class="fa fa-plus"></i> Add maintenance</a>
+{% endblock %}
+
+{% block main %}
+    <div class="row g-4">
+
+        {# ---------- Reports sent by the client ---------- #}
+        <div class="col-12 col-xl-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong><i class="fa fa-flag"></i> Reports sent by the client</strong>
+                    <span class="badge bg-info text-dark">{{ reports|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if reports is empty %}
+                        <p class="text-muted p-3 mb-0">No report has been sent for this bike.</p>
+                    {% else %}
+                        <ul class="list-group list-group-flush">
+                            {% for report in reports %}
+                                <li class="list-group-item">
+                                    <div class="small text-muted mb-1">
+                                        {{ report.createdAt|date('d/m/Y H:i') }}
+                                        {% if bike.client %}· {{ bike.client.fullname }}{% endif %}
+                                    </div>
+                                    <div>{{ report.description|nl2br }}</div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# ---------- Maintenance history ---------- #}
+        <div class="col-12 col-xl-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong><i class="fa fa-wrench"></i> Maintenance history</strong>
+                    <a class="btn btn-sm btn-primary" href="{{ add_url }}"><i class="fa fa-plus"></i> Add maintenance</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if maintenances is empty %}
+                        <p class="text-muted p-3 mb-0">No maintenance recorded yet.</p>
+                    {% else %}
+                        {% for m in maintenances %}
+                            <div class="p-3 {{ not loop.last ? 'border-bottom' : '' }}">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="fw-bold">{{ m.invoiceNumber }}</div>
+                                        <div class="small text-muted">{{ m.createdAt|date('d/m/Y H:i') }}</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold">{{ m.total|number_format(3, '.', ' ') }} TND</div>
+                                        <a class="btn btn-sm btn-outline-secondary mt-1" href="{{ path('admin_maintenance_invoice', {id: m.id}) }}">
+                                            <i class="fa fa-file-pdf"></i> Download PDF
+                                        </a>
+                                    </div>
+                                </div>
+
+                                {% if m.note %}
+                                    <div class="mt-2 small fst-italic">{{ m.note|nl2br }}</div>
+                                {% endif %}
+
+                                <table class="table table-sm mt-2 mb-0">
+                                    <thead>
+                                    <tr><th>Action</th><th class="text-end">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for line in m.lines %}
+                                        <tr>
+                                            <td>{{ line.label }}</td>
+                                            <td class="text-end">{{ line.quantity }}</td>
+                                            <td class="text-end">{{ line.price|number_format(3, '.', ' ') }}</td>
+                                            <td class="text-end">{{ line.total|number_format(3, '.', ' ') }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
