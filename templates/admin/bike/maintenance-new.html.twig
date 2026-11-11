@@ -42,6 +42,12 @@
                 {{ form_errors(form.note) }}
             </div>
 
+            <div class="mb-4">
+                <label class="form-label fw-bold" for="{{ form.odometer.vars.id }}">Odometer (km)</label>
+                {{ form_widget(form.odometer) }}
+                {{ form_errors(form.odometer) }}
+            </div>
+
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <label class="form-label fw-bold mb-0">Actions</label>
                 <button type="button" id="add-line" class="btn btn-sm btn-outline-primary"><i class="fa fa-plus"></i> Add line</button>

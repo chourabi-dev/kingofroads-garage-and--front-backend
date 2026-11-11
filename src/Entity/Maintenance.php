@@ -34,6 +34,9 @@ class Maintenance
     #[Assert\Valid]
     private Collection $lines;
 
+    #[ORM\Column]
+    private ?float $odometer = null;
+
     public function __construct()
     {
         $this->lines = new ArrayCollection();
@@ -123,5 +126,17 @@ class Maintenance
     public function getInvoiceNumber(): string
     {
         return sprintf('INV-%s-%05d', $this->createdAt?->format('Y') ?? date('Y'), $this->id ?? 0);
+    }
+
+    public function getOdometer(): ?float
+    {
+        return $this->odometer;
+    }
+
+    public function setOdometer(float $odometer): static
+    {
+        $this->odometer = $odometer;
+
+        return $this;
     }
 }

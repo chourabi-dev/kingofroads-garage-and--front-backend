@@ -8,6 +8,7 @@ use App\Entity\Client;
 use App\Repository\BikeBrandRepository;
 use App\Repository\BikeRepository;
 use App\Repository\ClientRepository;
+use App\Repository\MaintenanceRepository;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -255,7 +256,7 @@ final class GarageApiController extends AbstractController
 
 
     #[Route('/api/v1/garage/bikes', name: 'app_garage_my_bikes', methods: ['GET'])]
-    public function bikes(#[CurrentUser] ?Client $client, BikeRepository $bikeRepository): Response
+    public function bikes(#[CurrentUser] ?Client $client, BikeRepository $bikeRepository, MaintenanceRepository $maintenanceRepository ): Response
     {
         if (!$client) {
             return $this->json([
@@ -269,6 +270,13 @@ final class GarageApiController extends AbstractController
         $bikes = [];
 
         foreach ($bikesData as $key => $b) {
+
+            $lastMaintenance = $maintenanceRepository->findOneBy(
+                ['bike' => $b],
+                ['createdAt' => 'DESC']
+            );
+
+
             $bikes[] = [
                 "id" => $b->getUniqueID(),
                 "make" => $b->getMake()->getLabel(),
@@ -277,8 +285,8 @@ final class GarageApiController extends AbstractController
                 "plate" => $b->getPlate(),
                 "mileage" => (int) $b->getMileage(), 
                 "vin" => $b->getVin(), 
-                "maintenanceCount" => 0,
-                "lastServiceDate" => "2026-10-25"
+                "maintenanceCount" => sizeof($b->getMaintenances()),
+                "lastServiceDate" => $lastMaintenance != null ? $lastMaintenance->getCreatedAt()->format(DATE_ATOM) : null,
             ];
 
         }
@@ -475,9 +483,9 @@ final class GarageApiController extends AbstractController
             }
             $data[]=[
                 "date"=>$m->getCreatedAt()->format(DATE_ATOM),
-                "mileage"=>0,
-                "type"=>"",
-                "title"=>"",
+                "mileage"=>$m->getOdometer() ?? 0,
+                "type"=>"-",
+                "title"=>"N°".(100000 + $m->getId()) ,
                 "description"=>$m->getNote(),
                 "parts"=>$parts,
                 "cost"=>null,

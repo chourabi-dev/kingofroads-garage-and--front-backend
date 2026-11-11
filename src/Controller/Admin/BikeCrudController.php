@@ -103,8 +103,16 @@ class BikeCrudController extends AbstractCrudController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $bike->addMaintenance($maintenance);
+
+            // UPDATE BIKE ODO
+            $bike->setMileage($maintenance->getOdometer());
+
+
             $this->em->persist($maintenance);
+            $this->em->persist($bike);
             $this->em->flush();
+
+            
 
             $this->addFlash('success', 'Maintenance saved.');
 
