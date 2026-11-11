@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Bike;
 use App\Entity\BikeBrand;
+use App\Entity\Brand;
 use App\Entity\Category;
 use App\Entity\Client;
 use App\Entity\MaintenanceAction;
@@ -98,6 +99,7 @@ class DashboardController extends AbstractDashboardController
 
         yield MenuItem::section('Garage');
         yield MenuItem::linkToCrud('Marque', 'fas fa-list', BikeBrand::class); 
+        yield MenuItem::linkToCrud('Brands', 'fas fa-list', Brand::class);
         yield MenuItem::linkToCrud('Clients', 'fas fa-users', Client::class); 
         yield MenuItem::linkToCrud('Bikes', 'fa fa-motorcycle', Bike::class); 
         yield MenuItem::linkToCrud('Maintenance actions', 'fas fa-wrench', MaintenanceAction::class);

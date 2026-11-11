@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\BikeRepository;
+use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -60,6 +61,9 @@ class Bike
 
     public function __construct()
     {
+        $this->uniqueID = uniqid();
+        $this->createdAt = new DateTime();
+        
         $this->bikeReports = new ArrayCollection();
         $this->maintenances = new ArrayCollection();
     }

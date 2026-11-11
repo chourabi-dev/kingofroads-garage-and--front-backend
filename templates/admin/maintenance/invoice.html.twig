@@ -19,6 +19,12 @@
         table.lines td { padding: 7px; border-bottom: 1px solid #ddd; }
         table.lines th.num, table.lines td.num { text-align: right; }
         .total-row td { font-weight: bold; font-size: 13px; border-top: 2px solid #222; border-bottom: none; }
+        table.totals { width: 45%; margin-left: 55%; margin-top: 15px; border-collapse: collapse; }
+        table.totals td { padding: 5px 7px; }
+        table.totals td.num { text-align: right; }
+        table.totals tr.grand td { font-weight: bold; font-size: 13px; border-top: 2px solid #222; }
+        .arrete { margin-top: 18px; padding: 8px 10px; border: 1px solid #222; font-size: 11px; }
+        .legal { margin-top: 12px; font-size: 9px; color: #555; }
         .note { margin-top: 25px; padding: 10px; background: #f4f4f4; }
         .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #777; }
     </style>
@@ -28,8 +34,16 @@
 <table class="header">
     <tr>
         <td>
-            <h1>KING OF ROADS</h1>
-            <div class="muted">Garage</div>
+            <h1>{{ company.name }}</h1>
+            {% if company.tagline %}<div class="muted">{{ company.tagline }}</div>{% endif %}
+            <div style="margin-top:6px;">
+                {% if company.address %}{{ company.address }}<br>{% endif %}
+                {% if company.phone %}Tel: {{ company.phone }}<br>{% endif %}
+                {% if company.email %}{{ company.email }}{% endif %}{% if company.website %} · {{ company.website }}{% endif %}
+                {% if company.tax_id or company.rc %}<br>{% endif %}
+                {% if company.tax_id %}<strong>MF:</strong> {{ company.tax_id }}{% endif %}
+                {% if company.rc %}&nbsp; <strong>RC:</strong> {{ company.rc }}{% endif %}
+            </div>
         </td>
         <td class="right">
             <div style="font-size:16px;font-weight:bold;">INVOICE</div>
@@ -67,8 +81,8 @@
         <th>#</th>
         <th>Action</th>
         <th class="num">Qty</th>
-        <th class="num">Unit price (TND)</th>
-        <th class="num">Total (TND)</th>
+        <th class="num">Unit price HT (TND)</th>
+        <th class="num">Total HT (TND)</th>
     </tr>
     </thead>
     <tbody>
@@ -81,12 +95,43 @@
             <td class="num">{{ line.total|number_format(3, '.', ' ') }}</td>
         </tr>
     {% endfor %}
-    <tr class="total-row">
-        <td colspan="4" class="num">TOTAL</td>
-        <td class="num">{{ maintenance.total|number_format(3, '.', ' ') }} TND</td>
-    </tr>
     </tbody>
 </table>
+
+<table class="totals">
+    <tr>
+        <td>Total HT</td>
+        <td class="num">{{ totals.totalHt|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+    <tr>
+        <td>TVA ({{ totals.tvaRate|number_format(totals.tvaRate == totals.tvaRate|round ? 0 : 2, '.', ' ') }}%)</td>
+        <td class="num">{{ totals.tvaAmount|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+    <tr>
+        <td>Total TTC</td>
+        <td class="num">{{ (totals.totalHt + totals.tvaAmount)|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+    <tr>
+        <td>Timbre fiscal</td>
+        <td class="num">{{ totals.timbreFiscal|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+    <tr class="grand">
+        <td>Net à payer</td>
+        <td class="num">{{ totals.totalTtc|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+</table>
+
+<div class="arrete">
+    Arrêtée la présente facture à la somme de : <strong>{{ amountInWords|capitalize }}</strong>.
+</div>
+
+{% if company.bank_name or company.rib %}
+    <div class="legal">
+        <strong>Coordonnées bancaires :</strong>
+        {% if company.bank_name %}{{ company.bank_name }}{% endif %}
+        {% if company.rib %} — RIB: {{ company.rib }}{% endif %}
+    </div>
+{% endif %}
 
 {% if maintenance.note %}
     <div class="note">
@@ -95,7 +140,7 @@
     </div>
 {% endif %}
 
-<div class="footer">Thank you for your trust — King of Roads Garage</div>
+<div class="footer">Thank you for your trust — {{ company.name }}{% if company.tagline %} {{ company.tagline }}{% endif %}</div>
 
 </body>
 </html>

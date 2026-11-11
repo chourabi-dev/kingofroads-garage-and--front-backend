@@ -151,6 +151,8 @@ final class ApiController extends AbstractController
     #[Route('/shop/data/product/details/{id}', name: 'api_shop_product_details_route')]
     public function productDetails( Product $p): Response
     { 
+        $sizes = [];
+        
         foreach ($p->getSizes() as $key => $s) {
             $sizes[] = $s->getLabel();
         }

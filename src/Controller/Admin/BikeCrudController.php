@@ -14,6 +14,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -61,8 +62,27 @@ class BikeCrudController extends AbstractCrudController
                 ->setVirtual(true)
                 ->setTemplatePath('admin/bike/maintenance-summary.html.twig')
                 ->onlyOnDetail(),
+
+
+            AssociationField::new('client')->setLabel("client")->setColumns(12)->hideOnIndex(),
+            AssociationField::new('make')->setLabel("Brand")->setColumns(6)->hideOnIndex(),
+            TextField::new('model')->setColumns(6)->hideOnIndex(),
+            NumberField::new('mileage')->setColumns(12)->hideOnIndex(),
+
+
+            TextField::new('cc')->setColumns(12)->hideOnIndex(), 
+            NumberField::new('year')->setColumns(6)->hideOnIndex(),
+
+            NumberField::new('plate')->setColumns(6)->hideOnIndex(), 
+            TextField::new('vin')->setColumns(12)->hideOnIndex(), 
+            
+            
         ];
     }
+
+
+
+    
 
     /**
      * Bike history: reports sent by the client + maintenance history (invoices).
@@ -111,9 +131,7 @@ class BikeCrudController extends AbstractCrudController
             $this->em->persist($maintenance);
             $this->em->persist($bike);
             $this->em->flush();
-
             
-
             $this->addFlash('success', 'Maintenance saved.');
 
             return new RedirectResponse($this->detailUrl($bike));

@@ -27,6 +27,12 @@
     </div>
 {% endmacro %}
 
+{% block head_stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+{% endblock %}
+
 {% block content_title %}New maintenance — {{ bike.make.label }} {{ bike.model }} ({{ bike.plate }}){% endblock %}
 
 {% block main %}
@@ -64,7 +70,7 @@
             </div>
 
             <div class="text-end fs-5 mt-3">
-                Total: <strong id="grand-total">0.000</strong> TND
+                Total HT: <strong id="grand-total">0.000</strong> TND
             </div>
         </div>
     </div>
@@ -75,6 +81,8 @@
     </div>
     {{ form_end(form) }}
 
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         (function () {
             const container = document.getElementById('lines');
@@ -92,6 +100,33 @@
                 grand.textContent = total.toFixed(3);
             }
 
+            // Select2 is optional: if the CDN is unreachable we keep the plain <select>.
+            const hasSelect2 = !!(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2);
+
+            function initSelect2(scope) {
+                if (!hasSelect2) { return; }
+                window.jQuery(scope).find('select.line-action').each(function () {
+                    const $el = window.jQuery(this);
+                    if ($el.hasClass('select2-hidden-accessible')) { return; }
+                    $el.select2({
+                        theme: 'bootstrap-5',
+                        width: '100%',
+                        placeholder: '— Select an action —',
+                        allowClear: true,
+                    });
+                });
+            }
+
+            // Pre-fill the unit price from the chosen action (data-price on the <option>).
+            function onActionChanged(select) {
+                const opt = select.selectedOptions[0];
+                const row = select.closest('.maintenance-line');
+                if (opt && opt.dataset.price !== undefined && opt.dataset.price !== '') {
+                    row.querySelector('.line-price').value = parseFloat(opt.dataset.price).toFixed(3);
+                }
+                recompute();
+            }
+
             function addLine() {
                 const index = parseInt(container.dataset.index, 10);
                 container.dataset.index = index + 1;
@@ -101,6 +136,7 @@
                 const row = wrapper.firstElementChild;
                 row.querySelector('.line-qty').value = 1;
                 container.appendChild(row);
+                initSelect2(row);
                 recompute();
             }
 
@@ -116,15 +152,21 @@
 
             container.addEventListener('change', function (e) {
                 if (e.target.classList.contains('line-action')) {
-                    const opt = e.target.selectedOptions[0];
-                    const row = e.target.closest('.maintenance-line');
-                    if (opt && opt.dataset.price !== undefined) {
-                        row.querySelector('.line-price').value = parseFloat(opt.dataset.price).toFixed(3);
-                    }
+                    onActionChanged(e.target);
+                } else {
+                    recompute();
                 }
-                recompute();
             });
+
+            // Select2 fires jQuery events (not native ones), so listen to those as well.
+            if (hasSelect2) {
+                window.jQuery(container).on('select2:select select2:clear', '.line-action', function () {
+                    onActionChanged(this);
+                });
+            }
             container.addEventListener('input', recompute);
+
+            initSelect2(container);
 
             if (container.querySelectorAll('.maintenance-line').length === 0) {
                 addLine();

@@ -33,6 +33,10 @@ class ProductCrudController extends AbstractCrudController
             AssociationField::new('category')->setColumns(6)->setLabel("Catégory")->setFormTypeOption('choice_label', 'label'), 
               
             NumberField::new('stock')->setColumns(12)->setLabel("Stock"),
+            
+
+            AssociationField::new('brand')->setColumns(12)->setLabel("Brand")->setFormTypeOption('choice_label', 'label'), 
+             
               
 
             ImageField::new('image')
