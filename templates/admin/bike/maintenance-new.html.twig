@@ -1,11 +1,17 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 
 {% macro line_row(f) %}
-    <div class="maintenance-line row g-2 align-items-end border rounded p-2 mb-2">
-        <div class="col-12 col-md-5">
-            <label class="form-label small mb-1">Action</label>
+    {% set type = f.product.vars.data ? 'product' : 'action' %}
+    <div class="maintenance-line row g-2 align-items-end border rounded p-2 mb-2" data-type="{{ type }}">
+        <div class="col-12 col-md-5 line-col-action {{ type == 'product' ? 'd-none' : '' }}">
+            <label class="form-label small mb-1"><span class="badge bg-secondary">Action</span></label>
             {{ form_widget(f.action) }}
             {{ form_errors(f.action) }}
+        </div>
+        <div class="col-12 col-md-5 line-col-product {{ type == 'action' ? 'd-none' : '' }}">
+            <label class="form-label small mb-1"><span class="badge bg-info text-dark">Product</span></label>
+            {{ form_widget(f.product) }}
+            {{ form_errors(f.product) }}
         </div>
         <div class="col-6 col-md-2">
             <label class="form-label small mb-1">Quantity</label>
@@ -55,8 +61,11 @@
             </div>
 
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label fw-bold mb-0">Actions</label>
-                <button type="button" id="add-line" class="btn btn-sm btn-outline-primary"><i class="fa fa-plus"></i> Add line</button>
+                <label class="form-label fw-bold mb-0">Actions &amp; products</label>
+                <div class="d-flex gap-2">
+                    <button type="button" id="add-action" class="btn btn-sm btn-outline-primary"><i class="fa fa-plus"></i> Add action</button>
+                    <button type="button" id="add-product" class="btn btn-sm btn-outline-info"><i class="fa fa-plus"></i> Add product</button>
+                </div>
             </div>
 
             {{ form_errors(form.lines) }}
@@ -105,20 +114,20 @@
 
             function initSelect2(scope) {
                 if (!hasSelect2) { return; }
-                window.jQuery(scope).find('select.line-action').each(function () {
+                window.jQuery(scope).find('select.line-action, select.line-product').each(function () {
                     const $el = window.jQuery(this);
                     if ($el.hasClass('select2-hidden-accessible')) { return; }
                     $el.select2({
                         theme: 'bootstrap-5',
                         width: '100%',
-                        placeholder: '— Select an action —',
+                        placeholder: $el.hasClass('line-product') ? '— Select a product —' : '— Select an action —',
                         allowClear: true,
                     });
                 });
             }
 
-            // Pre-fill the unit price from the chosen action (data-price on the <option>).
-            function onActionChanged(select) {
+            // Pre-fill the unit price from the chosen action/product (data-price on the <option>).
+            function onItemChanged(select) {
                 const opt = select.selectedOptions[0];
                 const row = select.closest('.maintenance-line');
                 if (opt && opt.dataset.price !== undefined && opt.dataset.price !== '') {
@@ -127,7 +136,19 @@
                 recompute();
             }
 
-            function addLine() {
+            // A row is either an action or a product: show the matching select, hide + clear the other one,
+            // so only one of them is ever submitted.
+            function applyType(row, type) {
+                row.dataset.type = type;
+                const isProduct = type === 'product';
+                row.querySelector('.line-col-action').classList.toggle('d-none', isProduct);
+                row.querySelector('.line-col-product').classList.toggle('d-none', !isProduct);
+                const other = row.querySelector(isProduct ? 'select.line-action' : 'select.line-product');
+                other.value = '';
+                if (window.jQuery) { window.jQuery(other).trigger('change.select2'); }
+            }
+
+            function addLine(type) {
                 const index = parseInt(container.dataset.index, 10);
                 container.dataset.index = index + 1;
                 const html = container.dataset.prototype.replace(/__name__/g, index);
@@ -135,12 +156,14 @@
                 wrapper.innerHTML = html.trim();
                 const row = wrapper.firstElementChild;
                 row.querySelector('.line-qty').value = 1;
+                applyType(row, type);
                 container.appendChild(row);
                 initSelect2(row);
                 recompute();
             }
 
-            document.getElementById('add-line').addEventListener('click', addLine);
+            document.getElementById('add-action').addEventListener('click', function () { addLine('action'); });
+            document.getElementById('add-product').addEventListener('click', function () { addLine('product'); });
 
             container.addEventListener('click', function (e) {
                 const btn = e.target.closest('.remove-line');
@@ -151,8 +174,8 @@
             });
 
             container.addEventListener('change', function (e) {
-                if (e.target.classList.contains('line-action')) {
-                    onActionChanged(e.target);
+                if (e.target.classList.contains('line-action') || e.target.classList.contains('line-product')) {
+                    onItemChanged(e.target);
                 } else {
                     recompute();
                 }
@@ -160,8 +183,8 @@
 
             // Select2 fires jQuery events (not native ones), so listen to those as well.
             if (hasSelect2) {
-                window.jQuery(container).on('select2:select select2:clear', '.line-action', function () {
-                    onActionChanged(this);
+                window.jQuery(container).on('select2:select select2:clear', '.line-action, .line-product', function () {
+                    onItemChanged(this);
                 });
             }
             container.addEventListener('input', recompute);
@@ -169,7 +192,7 @@
             initSelect2(container);
 
             if (container.querySelectorAll('.maintenance-line').length === 0) {
-                addLine();
+                addLine('action');
             } else {
                 recompute();
             }

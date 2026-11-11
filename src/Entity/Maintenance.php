@@ -30,7 +30,7 @@ class Maintenance
      * @var Collection<int, MaintenanceLine>
      */
     #[ORM\OneToMany(targetEntity: MaintenanceLine::class, mappedBy: 'maintenance', cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[Assert\Count(min: 1, minMessage: 'Add at least one action line.')]
+    #[Assert\Count(min: 1, minMessage: 'Add at least one action or product line.')]
     #[Assert\Valid]
     private Collection $lines;
 

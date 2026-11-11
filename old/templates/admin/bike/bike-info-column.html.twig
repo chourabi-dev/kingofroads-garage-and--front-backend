@@ -1,0 +1,37 @@
+{% set bike = entity.instance %}
+ 
+    <div class="d-flex align-items-center gap-3">
+
+        <div class="rounded-3 bg-light p-2">
+            <img src="/uploads/brands/{{ bike.make.photo}}" width="100px" />
+        </div>
+
+        <div class="flex-grow-1">
+            <div class="fw-bold">
+                {{ bike.make.label }} {{ bike.model }}
+                <span class="badge bg-light text-dark">
+                    {{ bike.year }}
+                </span>
+            </div>
+
+            <div class="small text-muted">
+                {{ bike.cc }} cc · {{ bike.mileage|number_format }} km
+            </div>
+
+            <div class="small mt-1">
+                <span class="badge bg-secondary text-white">
+                    MOTO {{ bike.plate }}
+                </span>
+
+                <span class="badge bg-info text-dark">
+                    {{ bike.bikeReports|length }} reports
+                </span>
+            </div>
+
+            <div class="small text-muted mt-1">
+                VIN: {{ bike.vin }}
+            </div>
+        </div>
+
+    </div>
+ 

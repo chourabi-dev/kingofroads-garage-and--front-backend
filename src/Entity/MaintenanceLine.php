@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\MaintenanceLineRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: MaintenanceLineRepository::class)]
 class MaintenanceLine
@@ -18,12 +19,16 @@ class MaintenanceLine
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Maintenance $maintenance = null;
 
+    /** A line is either an action (labour) or a product (part sold) — exactly one of the two is set. */
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
-    #[Assert\NotNull(message: 'Please choose an action.')]
     private ?MaintenanceAction $action = null;
 
-    /** Snapshot of the action label, so old invoices stay unchanged if the action is renamed/deleted. */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Product $product = null;
+
+    /** Snapshot of the action/product label, so old invoices stay unchanged if it is renamed/deleted. */
     #[ORM\Column(length: 150)]
     private ?string $label = null;
 
@@ -66,6 +71,46 @@ class MaintenanceLine
         }
 
         return $this;
+    }
+
+    public function getProduct(): ?Product
+    {
+        return $this->product;
+    }
+
+    public function setProduct(?Product $product): static
+    {
+        $this->product = $product;
+        if ($product !== null) {
+            $this->label = mb_substr((string) $product->getLabel(), 0, 150);
+        }
+
+        return $this;
+    }
+
+    public function isProduct(): bool
+    {
+        return $this->product !== null;
+    }
+
+    /** 'product' or 'action' — handy for templates. */
+    public function getType(): string
+    {
+        return $this->isProduct() ? 'product' : 'action';
+    }
+
+    #[Assert\Callback]
+    public function validateActionOrProduct(ExecutionContextInterface $context): void
+    {
+        if ($this->action === null && $this->product === null) {
+            $context->buildViolation('Please choose an action or a product.')
+                ->atPath('action')
+                ->addViolation();
+        } elseif ($this->action !== null && $this->product !== null) {
+            $context->buildViolation('A line must be either an action or a product, not both.')
+                ->atPath('product')
+                ->addViolation();
+        }
     }
 
     public function getLabel(): ?string

@@ -70,7 +70,7 @@ class BikeCrudController extends AbstractCrudController
             NumberField::new('mileage')->setColumns(12)->hideOnIndex(),
 
 
-            TextField::new('cc')->setColumns(12)->hideOnIndex(), 
+            NumberField::new('cc')->setColumns(12)->hideOnIndex(), 
             NumberField::new('year')->setColumns(6)->hideOnIndex(),
 
             NumberField::new('plate')->setColumns(6)->hideOnIndex(), 

@@ -79,7 +79,7 @@
     <thead>
     <tr>
         <th>#</th>
-        <th>Action</th>
+        <th>Description</th>
         <th class="num">Qty</th>
         <th class="num">Unit price HT (TND)</th>
         <th class="num">Total HT (TND)</th>
@@ -89,7 +89,7 @@
     {% for line in maintenance.lines %}
         <tr>
             <td>{{ loop.index }}</td>
-            <td>{{ line.label }}</td>
+            <td>{{ line.label }}{% if line.isProduct %} <span class="muted">(product)</span>{% endif %}</td>
             <td class="num">{{ line.quantity }}</td>
             <td class="num">{{ line.price|number_format(3, '.', ' ') }}</td>
             <td class="num">{{ line.total|number_format(3, '.', ' ') }}</td>

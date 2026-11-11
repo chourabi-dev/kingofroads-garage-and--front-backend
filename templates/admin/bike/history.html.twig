@@ -69,12 +69,12 @@
 
                                 <table class="table table-sm mt-2 mb-0">
                                     <thead>
-                                    <tr><th>Action</th><th class="text-end">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr>
+                                    <tr><th>Item</th><th class="text-end">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr>
                                     </thead>
                                     <tbody>
                                     {% for line in m.lines %}
                                         <tr>
-                                            <td>{{ line.label }}</td>
+                                            <td>{{ line.label }}{% if line.isProduct %} <span class="badge bg-info text-dark">Product</span>{% endif %}</td>
                                             <td class="text-end">{{ line.quantity }}</td>
                                             <td class="text-end">{{ line.price|number_format(3, '.', ' ') }}</td>
                                             <td class="text-end">{{ line.total|number_format(3, '.', ' ') }}</td>

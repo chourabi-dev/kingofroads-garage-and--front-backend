@@ -1,0 +1,72 @@
+security:
+
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        
+    providers:
+        # used to reload user from session & other features (e.g. switch_user)
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+                
+        app_client_provider:
+            entity:
+                class: App\Entity\Client
+                property: email
+                
+        
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        client_api:
+            pattern: ^/api/v1
+            stateless: true
+            provider: app_client_provider
+            jwt: ~
+            json_login:
+                check_path: /api/v1/auth/login
+                success_handler: App\Security\ClientJwtSuccessHandler
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+
+        main:
+            lazy: true
+            provider: app_user_provider
+            custom_authenticator: App\Security\MainAuthenticator
+            logout:
+                path: app_logout
+
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800
+                path: /
+
+
+    access_control:
+        - { path: ^/api/v1/auth/register$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/v1/shop, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/checkout, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/products/featured, roles: PUBLIC_ACCESS }
+        
+
+        
+        
+         
+        - { path: ^/api/v1, roles: ROLE_CLIENT }
+
+
+        - { path: ^/admin, roles: ROLE_ADMIN }
+
+when@test:
+    security:
+        password_hashers:
+        
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

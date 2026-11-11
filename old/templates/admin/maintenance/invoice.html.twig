@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ maintenance.invoiceNumber }}</title>
+    <style>
+        @page { margin: 30px 35px; }
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #222; }
+        h1 { font-size: 22px; margin: 0; letter-spacing: 1px; }
+        .muted { color: #777; }
+        .header { width: 100%; margin-bottom: 25px; border-bottom: 3px solid #222; padding-bottom: 10px; }
+        .header td { vertical-align: top; }
+        .right { text-align: right; }
+        .boxes { width: 100%; margin-bottom: 20px; }
+        .boxes td { width: 50%; vertical-align: top; padding-right: 15px; }
+        .box-title { font-weight: bold; text-transform: uppercase; font-size: 10px; color: #777; margin-bottom: 4px; }
+        table.lines { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table.lines th { background: #222; color: #fff; padding: 7px; text-align: left; font-size: 10px; }
+        table.lines td { padding: 7px; border-bottom: 1px solid #ddd; }
+        table.lines th.num, table.lines td.num { text-align: right; }
+        .total-row td { font-weight: bold; font-size: 13px; border-top: 2px solid #222; border-bottom: none; }
+        table.totals { width: 45%; margin-left: 55%; margin-top: 15px; border-collapse: collapse; }
+        table.totals td { padding: 5px 7px; }
+        table.totals td.num { text-align: right; }
+        table.totals tr.grand td { font-weight: bold; font-size: 13px; border-top: 2px solid #222; }
+        .arrete { margin-top: 18px; padding: 8px 10px; border: 1px solid #222; font-size: 11px; }
+        .legal { margin-top: 12px; font-size: 9px; color: #555; }
+        .note { margin-top: 25px; padding: 10px; background: #f4f4f4; }
+        .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #777; }
+    </style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td>
+            <h1>{{ company.name }}</h1>
+            {% if company.tagline %}<div class="muted">{{ company.tagline }}</div>{% endif %}
+            <div style="margin-top:6px;">
+                {% if company.address %}{{ company.address }}<br>{% endif %}
+                {% if company.phone %}Tel: {{ company.phone }}<br>{% endif %}
+                {% if company.email %}{{ company.email }}{% endif %}{% if company.website %} · {{ company.website }}{% endif %}
+                {% if company.tax_id or company.rc %}<br>{% endif %}
+                {% if company.tax_id %}<strong>MF:</strong> {{ company.tax_id }}{% endif %}
+                {% if company.rc %}&nbsp; <strong>RC:</strong> {{ company.rc }}{% endif %}
+            </div>
+        </td>
+        <td class="right">
+            <div style="font-size:16px;font-weight:bold;">INVOICE</div>
+            <div>{{ maintenance.invoiceNumber }}</div>
+            <div class="muted">Date: {{ maintenance.createdAt|date('d/m/Y') }}</div>
+        </td>
+    </tr>
+</table>
+
+<table class="boxes">
+    <tr>
+        <td>
+            <div class="box-title">Billed to</div>
+            {% if client %}
+                <strong>{{ client.fullname }}</strong><br>
+                {{ client.email }}<br>
+                Tel: {{ client.phone }}
+            {% else %}
+                <span class="muted">—</span>
+            {% endif %}
+        </td>
+        <td>
+            <div class="box-title">Motorcycle</div>
+            <strong>{{ bike.make.label }} {{ bike.model }}</strong> ({{ bike.year }})<br>
+            Plate: {{ bike.plate }}<br>
+            VIN: {{ bike.vin }}<br>
+            {{ bike.cc }} cc · {{ bike.mileage|number_format(0, '.', ' ') }} km
+        </td>
+    </tr>
+</table>
+
+<table class="lines">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Action</th>
+        <th class="num">Qty</th>
+        <th class="num">Unit price HT (TND)</th>
+        <th class="num">Total HT (TND)</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for line in maintenance.lines %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ line.label }}</td>
+            <td class="num">{{ line.quantity }}</td>
+            <td class="num">{{ line.price|number_format(3, '.', ' ') }}</td>
+            <td class="num">{{ line.total|number_format(3, '.', ' ') }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<table class="totals">
+    <tr>
+        <td>Total HT</td>
+        <td class="num">{{ totals.totalHt|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+    <tr>
+        <td>TVA ({{ totals.tvaRate|number_format(totals.tvaRate == totals.tvaRate|round ? 0 : 2, '.', ' ') }}%)</td>
+        <td class="num">{{ totals.tvaAmount|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+    <tr>
+        <td>Total TTC</td>
+        <td class="num">{{ (totals.totalHt + totals.tvaAmount)|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+    <tr>
+        <td>Timbre fiscal</td>
+        <td class="num">{{ totals.timbreFiscal|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+    <tr class="grand">
+        <td>Net à payer</td>
+        <td class="num">{{ totals.totalTtc|number_format(3, '.', ' ') }} TND</td>
+    </tr>
+</table>
+
+<div class="arrete">
+    Arrêtée la présente facture à la somme de : <strong>{{ amountInWords|capitalize }}</strong>.
+</div>
+
+{% if company.bank_name or company.rib %}
+    <div class="legal">
+        <strong>Coordonnées bancaires :</strong>
+        {% if company.bank_name %}{{ company.bank_name }}{% endif %}
+        {% if company.rib %} — RIB: {{ company.rib }}{% endif %}
+    </div>
+{% endif %}
+
+{% if maintenance.note %}
+    <div class="note">
+        <div class="box-title">Note</div>
+        {{ maintenance.note|nl2br }}
+    </div>
+{% endif %}
+
+<div class="footer">Thank you for your trust — {{ company.name }}{% if company.tagline %} {{ company.tagline }}{% endif %}</div>
+
+</body>
+</html>

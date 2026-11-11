@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\MaintenanceAction;
 use App\Entity\MaintenanceLine;
+use App\Entity\Product;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -21,10 +22,22 @@ class MaintenanceLineType extends AbstractType
                 'choice_label' => 'label',
                 'placeholder' => '— Select an action —',
                 'label' => 'Action',
+                'required' => false,
                 'query_builder' => fn ($repo) => $repo->createQueryBuilder('a')->orderBy('a.label', 'ASC'),
                 // used by the JS to pre-fill the price when an action is chosen
                 'choice_attr' => fn (?MaintenanceAction $a) => $a ? ['data-price' => $a->getDefaultPrice()] : [],
                 'attr' => ['class' => 'form-select line-action select2'],
+            ])
+            ->add('product', EntityType::class, [
+                'class' => Product::class,
+                'choice_label' => 'label',
+                'placeholder' => '— Select a product —',
+                'label' => 'Product',
+                'required' => false,
+                'query_builder' => fn ($repo) => $repo->createQueryBuilder('p')->orderBy('p.label', 'ASC'),
+                // used by the JS to pre-fill the unit price when a product is chosen
+                'choice_attr' => fn (?Product $p) => $p ? ['data-price' => (string) $p->getPrice()] : [],
+                'attr' => ['class' => 'form-select line-product select2'],
             ])
             ->add('quantity', IntegerType::class, [
                 'label' => 'Quantity',
