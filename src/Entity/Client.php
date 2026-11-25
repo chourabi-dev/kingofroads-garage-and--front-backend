@@ -48,6 +48,9 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Bike::class, mappedBy: 'client')]
     private Collection $bikes;
 
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $fiscalID = null;
+
     public function __construct()
     {
         $this->bikes = new ArrayCollection();
@@ -194,5 +197,17 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
     public function __toString()
     {
         return $this->fullname;
+    }
+
+    public function getFiscalID(): ?string
+    {
+        return $this->fiscalID;
+    }
+
+    public function setFiscalID(?string $fiscalID): static
+    {
+        $this->fiscalID = $fiscalID;
+
+        return $this;
     }
 }

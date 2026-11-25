@@ -58,15 +58,17 @@ class ProductCrudController extends AbstractCrudController
             
 
 
-            NumberField::new('price')->setColumns(12)->setLabel("Prix"),
+            NumberField::new('initPrice')->setColumns(6)->setLabel("Prix achat"),
+            NumberField::new('price')->setColumns(6)->setLabel("Prix vente"),
+            
             BooleanField::new('available')->setColumns(12)->setLabel("Affiché"),
             BooleanField::new('featured')->setColumns(12)->setLabel("En premier"),
 
 
-            AssociationField::new('sizes')  
+            /*AssociationField::new('sizes')  
             ->onlyOnForms()
             ->setColumns(12)
-            ->setLabel("Tailles"),
+            ->setLabel("Tailles"),*/
  
     
             TextEditorField::new('content')->setColumns(12)->setLabel("Contenue")->hideOnIndex(),

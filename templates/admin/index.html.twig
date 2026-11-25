@@ -1,9 +1,409 @@
-{% extends '@EasyAdmin/layout.html.twig' %}
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Dashboard{% endblock %}
+
+{# ---------- helpers ---------- #}
+{% macro delta(v) %}
+    {% if v is null %}
+        <span class="kr-delta kr-delta-flat">new</span>
+    {% elseif v >= 0 %}
+        <span class="kr-delta kr-delta-up"><i class="fa fa-arrow-trend-up"></i> {{ v }}%</span>
+    {% else %}
+        <span class="kr-delta kr-delta-down"><i class="fa fa-arrow-trend-down"></i> {{ v|abs }}%</span>
+    {% endif %}
+{% endmacro %}
+
+{# Colour of an order status (danger / success / warning / info / secondary), guessed from its label #}
+{% macro tone(label) %}
+    {%- set l = (label ?? '')|lower -%}
+    {%- if l matches '/annul|cancel|refus|reject/' -%}danger
+    {%- elseif l matches '/livr|deliver|termin|complet|done|pay/' -%}success
+    {%- elseif l matches '/nouv|new|attente|pending/' -%}warning
+    {%- elseif l matches '/cours|process|ship|exp|par/' -%}info
+    {%- else -%}secondary
+    {%- endif -%}
+{% endmacro %}
 
 {% block main %}
+    {% import _self as ui %}
 
+    <style>
+        .kr-dash { --kr-indigo: #4f46e5; --kr-orange: #f97316; --kr-red: #ef4444; --kr-amber: #eab308; --kr-teal: #0d9488; --kr-blue: #0ea5e9; --kr-green: #22c55e; --kr-grey: #94a3b8; }
+        .kr-dash .card { border-radius: 14px; border: 1px solid rgba(127,127,127,.18); box-shadow: 0 1px 2px rgba(16,24,40,.05); height: 100%; }
+        .kr-dash .card-header { background: transparent; border-bottom: 1px solid rgba(127,127,127,.15); padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+        .kr-dash .card-header h5 { margin: 0; font-size: 1rem; font-weight: 600; }
+        .kr-dash .card-body { padding: 1.25rem; }
+        .kr-hello h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; margin: 0; }
+        .kr-muted { color: var(--bs-secondary-color, #6b7280); }
+        .kr-kpi .card-body { display: flex; gap: 1rem; align-items: flex-start; }
+        .kr-icon { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 1.15rem; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+        .kr-kpi-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color, #6b7280); font-weight: 600; }
+        .kr-value { font-size: 1.7rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin: .15rem 0 .3rem; }
+        .kr-value small { font-size: .8rem; font-weight: 600; color: var(--bs-secondary-color, #6b7280); }
+        .kr-delta { font-size: .75rem; font-weight: 600; padding: .1rem .45rem; border-radius: 999px; white-space: nowrap; }
+        .kr-delta-up { color: #15803d; background: rgba(34,197,94,.15); }
+        .kr-delta-down { color: #b91c1c; background: rgba(239,68,68,.15); }
+        .kr-delta-flat { color: var(--bs-secondary-color, #6b7280); background: rgba(127,127,127,.15); }
+        a.kr-kpi-link { text-decoration: none; color: inherit; display: block; height: 100%; }
+        a.kr-kpi-link .card { transition: transform .15s ease, box-shadow .15s ease; }
+        a.kr-kpi-link:hover .card { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(16,24,40,.12); }
+        .kr-alert-card { border-color: color-mix(in srgb, var(--accent) 45%, transparent) !important; }
+        .kr-mini { text-align: center; padding: .9rem .5rem; }
+        .kr-mini .n { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
+        .kr-mini .t { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color, #6b7280); font-weight: 600; }
+        .kr-table th { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color, #6b7280); font-weight: 600; border-bottom-width: 1px; white-space: nowrap; }
+        .kr-table td { vertical-align: middle; }
+        .kr-table-wrap { overflow-x: auto; }
+        .kr-bar { height: 8px; border-radius: 999px; background: rgba(127,127,127,.15); overflow: hidden; }
+        .kr-bar > span { display: block; height: 100%; border-radius: 999px; }
+        .kr-row { display: flex; align-items: center; gap: .75rem; padding: .6rem 0; border-bottom: 1px dashed rgba(127,127,127,.2); }
+        .kr-row:last-child { border-bottom: 0; }
+        .kr-empty { text-align: center; padding: 2rem 1rem; color: var(--bs-secondary-color, #6b7280); }
+        .kr-empty i { font-size: 1.6rem; display: block; margin-bottom: .5rem; opacity: .6; }
+        .kr-chart-box { position: relative; height: 300px; }
+        .kr-legend span { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; margin-left: 1rem; }
+        .kr-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+        .kr-quick .btn { border-radius: 10px; font-weight: 500; }
+        .kr-rank { width: 24px; height: 24px; border-radius: 999px; display: grid; place-items: center; font-size: .72rem; font-weight: 700; color: var(--kr-indigo); background: color-mix(in srgb, var(--kr-indigo) 14%, transparent); flex: 0 0 auto; }
+        /* status / stock pills: --c is set by the tone modifier */
+        .kr-pill { --c: var(--kr-grey); display: inline-block; padding: .25rem .65rem; border-radius: 999px; font-size: .75rem; font-weight: 600; white-space: nowrap; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+        .kr-danger { --c: var(--kr-red); } .kr-success { --c: var(--kr-green); } .kr-warning { --c: var(--kr-amber); } .kr-info { --c: var(--kr-blue); } .kr-secondary { --c: var(--kr-grey); }
+        .kr-bar > span.kr-danger, .kr-bar > span.kr-success, .kr-bar > span.kr-warning, .kr-bar > span.kr-info, .kr-bar > span.kr-secondary { background: var(--c); }
+    </style>
 
- 
+    <div class="kr-dash">
 
+        {# ---------- header + quick actions ---------- #}
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div class="kr-hello">
+                <h2>Welcome back{% if app.user %}, {{ app.user.userIdentifier|split('@')|first|capitalize }}{% endif %} 👋</h2>
+                <div class="kr-muted">{{ 'now'|date('l, j F Y') }} &middot; here's what is happening in your store and garage.</div>
+            </div>
+            <div class="kr-quick d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" href="{{ ea_url().setController('App\\Controller\\Admin\\BikeCrudController').setAction('index') }}"><i class="fa fa-wrench me-1"></i> New maintenance</a>
+                <a class="btn btn-outline-secondary" href="{{ ea_url().setController('App\\Controller\\Admin\\OrderCrudController').setAction('index') }}"><i class="fa fa-cart-plus me-1"></i> Orders</a>
+                <a class="btn btn-outline-secondary" href="{{ ea_url().setController('App\\Controller\\Admin\\ClientCrudController').setAction('new') }}"><i class="fa fa-user-plus me-1"></i> Client</a>
+                <a class="btn btn-outline-secondary" href="{{ ea_url().setController('App\\Controller\\Admin\\BikeCrudController').setAction('new') }}"><i class="fa fa-motorcycle me-1"></i> Bike</a>
+                <a class="btn btn-outline-secondary" href="{{ ea_url().setController('App\\Controller\\Admin\\ProductCrudController').setAction('new') }}"><i class="fa fa-box me-1"></i> Product</a>
+            </div>
+        </div>
 
+        {# ---------- KPI cards ---------- #}
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-6 col-xxl-3">
+                <div class="card kr-kpi" style="--accent: var(--kr-indigo)">
+                    <div class="card-body">
+                        <div class="kr-icon"><i class="fa fa-store"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="kr-kpi-label">Store sales &middot; this month</div>
+                            <div class="kr-value">{{ kpi.store_month|number_format(3, '.', ' ') }} <small>TND</small></div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                {{ ui.delta(kpi.store_delta) }}
+                                <span class="kr-muted small">{{ kpi.orders_month }} order{{ kpi.orders_month == 1 ? '' : 's' }} &middot; vs last month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xxl-3">
+                <div class="card kr-kpi" style="--accent: var(--kr-orange)">
+                    <div class="card-body">
+                        <div class="kr-icon"><i class="fa fa-screwdriver-wrench"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="kr-kpi-label">Garage invoices &middot; this month</div>
+                            <div class="kr-value">{{ kpi.garage_month|number_format(3, '.', ' ') }} <small>TND HT</small></div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                {{ ui.delta(kpi.garage_delta) }}
+                                <span class="kr-muted small">{{ kpi.maintenances_month }} maintenance{{ kpi.maintenances_month == 1 ? '' : 's' }} &middot; vs last month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xxl-3">
+                <a class="kr-kpi-link" href="{{ ea_url().setController('App\\Controller\\Admin\\OrderCrudController').setAction('index') }}">
+                    <div class="card kr-kpi {{ kpi.pending_orders > 0 ? 'kr-alert-card' : '' }}" style="--accent: {{ kpi.pending_orders > 0 ? 'var(--kr-red)' : 'var(--kr-teal)' }}">
+                        <div class="card-body">
+                            <div class="kr-icon"><i class="fa {{ kpi.pending_orders > 0 ? 'fa-bell' : 'fa-circle-check' }}"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="kr-kpi-label">New orders to process</div>
+                                <div class="kr-value">{{ kpi.pending_orders }}</div>
+                                <span class="kr-muted small">{{ kpi.pending_orders > 0 ? 'Waiting for your attention' : 'All caught up' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6 col-xxl-3">
+                <a class="kr-kpi-link" href="{{ ea_url().setController('App\\Controller\\Admin\\ProductCrudController').setAction('index') }}">
+                    <div class="card kr-kpi {{ kpi.low_stock > 0 ? 'kr-alert-card' : '' }}" style="--accent: {{ kpi.low_stock > 0 ? 'var(--kr-amber)' : 'var(--kr-teal)' }}">
+                        <div class="card-body">
+                            <div class="kr-icon"><i class="fa fa-boxes-stacked"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="kr-kpi-label">Low stock products</div>
+                                <div class="kr-value">{{ kpi.low_stock }}</div>
+                                <span class="kr-muted small">{{ kpi.low_stock > 0 ? 'Stock of ' ~ kpi.low_stock_threshold ~ ' units or less' : 'Stock levels are healthy' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        {# ---------- mini stats ---------- #}
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-3">
+                <div class="card kr-mini"><div class="n">{{ kpi.clients }}</div><div class="t"><i class="fa fa-users me-1"></i> Clients</div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card kr-mini"><div class="n">{{ kpi.bikes }} {% if kpi.bikes_new > 0 %}<small class="kr-delta kr-delta-up">+{{ kpi.bikes_new }} this month</small>{% endif %}</div><div class="t"><i class="fa fa-motorcycle me-1"></i> Bikes registered</div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card kr-mini"><div class="n">{{ kpi.reports_30d }}</div><div class="t"><i class="fa fa-flag me-1"></i> Client reports (30 days)</div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card kr-mini"><div class="n">{{ (kpi.store_month + kpi.garage_month)|number_format(3, '.', ' ') }}</div><div class="t"><i class="fa fa-coins me-1"></i> Combined revenue (TND, month)</div></div>
+            </div>
+        </div>
+
+        {# ---------- chart + status + top products ---------- #}
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-xl-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Revenue &middot; last 6 months</h5>
+                        <div class="kr-legend">
+                            <span><i style="background: var(--kr-indigo)"></i>Store {{ chart.store_total|number_format(0, '.', ' ') }}</span>
+                            <span><i style="background: var(--kr-orange)"></i>Garage {{ chart.garage_total|number_format(0, '.', ' ') }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="kr-chart-box">
+                            <canvas id="krRevenueChart"></canvas>
+                            <div id="krChartFallback" class="kr-empty d-none"><i class="fa fa-chart-column"></i>The chart could not be loaded.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4 d-flex flex-column gap-3">
+                <div class="card">
+                    <div class="card-header"><h5>Active orders by status</h5><span class="kr-muted small">{{ status_total }} total</span></div>
+                    <div class="card-body py-2">
+                        {% for s in status_breakdown %}
+                            {% set tone = ui.tone(s.label)|trim %}
+                            <div class="kr-row">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="fw-semibold">{{ s.label ?? 'No status' }}</span>
+                                        <span class="kr-muted">{{ s.total }}</span>
+                                    </div>
+                                    <div class="kr-bar"><span class="kr-{{ tone }}" style="width: {{ status_total > 0 ? (s.total / status_total * 100)|round : 0 }}%"></span></div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="kr-empty"><i class="fa fa-inbox"></i>No active orders.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h5>Top products &middot; 30 days</h5></div>
+                    <div class="card-body py-2">
+                        {% set max_qty = top_products ? (top_products|first).qty : 0 %}
+                        {% for p in top_products %}
+                            <div class="kr-row">
+                                <span class="kr-rank">{{ loop.index }}</span>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="fw-semibold text-truncate" style="max-width: 200px">{{ p.label }}</span>
+                                        <span class="kr-muted">{{ p.qty }} sold</span>
+                                    </div>
+                                    <div class="kr-bar"><span style="background: var(--kr-indigo); width: {{ max_qty > 0 ? (p.qty / max_qty * 100)|round : 0 }}%"></span></div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="kr-empty"><i class="fa fa-ranking-star"></i>No sales in the last 30 days.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ---------- recent orders + low stock ---------- #}
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-xl-7">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Recent orders</h5>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ ea_url().setController('App\\Controller\\Admin\\OrderCrudController').setAction('index') }}">View all</a>
+                    </div>
+                    <div class="card-body pt-2 kr-table-wrap">
+                        {% if recent_orders %}
+                            <table class="table table-borderless table-hover kr-table mb-0">
+                                <thead><tr><th>#</th><th>Customer</th><th>Date</th><th class="text-end">Total</th><th>Status</th></tr></thead>
+                                <tbody>
+                                {% for o in recent_orders %}
+                                    <tr>
+                                        <td class="fw-semibold">#{{ o.id }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ o.name }}</div>
+                                            <div class="kr-muted small">{{ o.phone }}</div>
+                                        </td>
+                                        <td class="kr-muted small">{{ o.createdAt|date('d M, H:i') }}</td>
+                                        <td class="text-end fw-semibold">{{ o.total|number_format(3, '.', ' ') }}</td>
+                                        <td>
+                                            {% set tone = ui.tone(o.status ? o.status.label : '')|trim %}
+                                            <span class="kr-pill kr-{{ tone }}">{{ o.status ? o.status.label : '—' }}</span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="kr-empty"><i class="fa fa-cart-shopping"></i>No orders yet.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Low stock</h5>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ ea_url().setController('App\\Controller\\Admin\\ProductCrudController').setAction('index') }}">Manage stock</a>
+                    </div>
+                    <div class="card-body py-2">
+                        {% for p in low_stock_products %}
+                            <div class="kr-row">
+                                <div class="flex-grow-1 text-truncate fw-semibold">{{ p.label }}</div>
+                                {% if p.stock <= 0 %}
+                                    <span class="kr-pill kr-danger">Out of stock</span>
+                                {% else %}
+                                    <span class="kr-pill kr-warning">{{ p.stock }} left</span>
+                                {% endif %}
+                                <a class="btn btn-sm btn-outline-primary" href="{{ ea_url().setController('App\\Controller\\Admin\\ProductCrudController').setAction('edit').setEntityId(p.id) }}" title="Update stock"><i class="fa fa-pen"></i></a>
+                            </div>
+                        {% else %}
+                            <div class="kr-empty"><i class="fa fa-circle-check"></i>Every product is well stocked.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ---------- recent maintenances + client reports ---------- #}
+        <div class="row g-3">
+            <div class="col-12 col-xl-7">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Recent maintenances</h5>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ ea_url().setController('App\\Controller\\Admin\\BikeCrudController').setAction('index') }}">All bikes</a>
+                    </div>
+                    <div class="card-body pt-2 kr-table-wrap">
+                        {% if recent_maintenances %}
+                            <table class="table table-borderless table-hover kr-table mb-0">
+                                <thead><tr><th>Invoice</th><th>Bike</th><th>Date</th><th class="text-end">Total HT</th><th></th></tr></thead>
+                                <tbody>
+                                {% for m in recent_maintenances %}
+                                    <tr>
+                                        <td class="fw-semibold">{{ m.invoiceNumber }}</td>
+                                        <td>
+                                            {% if m.bike %}
+                                                <a class="text-decoration-none fw-semibold" href="{{ ea_url().setController('App\\Controller\\Admin\\BikeCrudController').setAction('history').setEntityId(m.bike.id) }}">{{ m.bike.make ? m.bike.make.label : '' }} {{ m.bike.model }}</a>
+                                                <div class="kr-muted small">{{ m.bike.plate }}{% if m.bike.client %} &middot; {{ m.bike.client.fullname }}{% endif %}</div>
+                                            {% else %}
+                                                <span class="kr-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="kr-muted small">{{ m.createdAt|date('d M Y') }}</td>
+                                        <td class="text-end fw-semibold">{{ m.total|number_format(3, '.', ' ') }}</td>
+                                        <td class="text-end">
+                                            <a class="btn btn-sm btn-outline-secondary" target="_blank" href="{{ path('admin_maintenance_invoice', {id: m.id}) }}" title="Open the PDF invoice"><i class="fa fa-file-pdf"></i></a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="kr-empty"><i class="fa fa-screwdriver-wrench"></i>No maintenance recorded yet.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-5">
+                <div class="card">
+                    <div class="card-header"><h5>Latest client reports</h5></div>
+                    <div class="card-body py-2">
+                        {% for r in recent_reports %}
+                            <div class="kr-row align-items-start">
+                                <div class="kr-icon" style="--accent: var(--kr-orange); width: 36px; height: 36px; font-size: .95rem"><i class="fa fa-flag"></i></div>
+                                <div class="flex-grow-1">
+                                    <div class="small">{{ r.description|length > 110 ? r.description|slice(0, 110) ~ '…' : r.description }}</div>
+                                    <div class="kr-muted small mt-1">
+                                        {% if r.bike %}
+                                            <a class="text-decoration-none" href="{{ ea_url().setController('App\\Controller\\Admin\\BikeCrudController').setAction('history').setEntityId(r.bike.id) }}">{{ r.bike.make ? r.bike.make.label : '' }} {{ r.bike.model }} ({{ r.bike.plate }})</a> &middot;
+                                        {% endif %}
+                                        {{ r.createdAt|date('d M Y') }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="kr-empty"><i class="fa fa-flag-checkered"></i>No reports from clients.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            const canvas = document.getElementById('krRevenueChart');
+            if (!canvas) { return; }
+            if (typeof Chart === 'undefined') {
+                canvas.classList.add('d-none');
+                document.getElementById('krChartFallback').classList.remove('d-none');
+                return;
+            }
+
+            const data = {{ chart|json_encode|raw }};
+            const textColor = getComputedStyle(document.body).color;
+            const fmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: 'Store', data: data.store, backgroundColor: '#4f46e5', borderRadius: 6, maxBarThickness: 42 },
+                        { label: 'Garage HT', data: data.garage, backgroundColor: '#f97316', borderRadius: 6, maxBarThickness: 42 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => ' ' + ctx.dataset.label + ': ' + fmt.format(ctx.parsed.y) + ' TND' } }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false }, ticks: { color: textColor } },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            grid: { color: 'rgba(127,127,127,.18)' },
+                            ticks: { color: textColor, callback: (v) => v >= 1000 ? (v / 1000) + 'k' : v }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
 {% endblock main %}

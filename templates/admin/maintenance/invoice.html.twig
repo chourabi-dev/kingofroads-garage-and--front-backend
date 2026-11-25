@@ -1,5 +1,6 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>{{ maintenance.invoiceNumber }}</title>
@@ -34,21 +35,22 @@
 <table class="header">
     <tr>
         <td>
+            <img src="https://www.kingofroads.com/assets/logo-CjTRqnLD.png" width="100px" />
             <h1>{{ company.name }}</h1>
             {% if company.tagline %}<div class="muted">{{ company.tagline }}</div>{% endif %}
             <div style="margin-top:6px;">
                 {% if company.address %}{{ company.address }}<br>{% endif %}
-                {% if company.phone %}Tel: {{ company.phone }}<br>{% endif %}
+                {% if company.phone %}Tél : {{ company.phone }}<br>{% endif %}
                 {% if company.email %}{{ company.email }}{% endif %}{% if company.website %} · {{ company.website }}{% endif %}
                 {% if company.tax_id or company.rc %}<br>{% endif %}
-                {% if company.tax_id %}<strong>MF:</strong> {{ company.tax_id }}{% endif %}
-                {% if company.rc %}&nbsp; <strong>RC:</strong> {{ company.rc }}{% endif %}
+                {% if company.tax_id %}<strong>MF :</strong> {{ company.tax_id }}{% endif %}
+                {% if company.rc %}&nbsp; <strong>RC :</strong> {{ company.rc }}{% endif %}
             </div>
         </td>
         <td class="right">
-            <div style="font-size:16px;font-weight:bold;">INVOICE</div>
+            <div style="font-size:16px;font-weight:bold;">FACTURE</div>
             <div>{{ maintenance.invoiceNumber }}</div>
-            <div class="muted">Date: {{ maintenance.createdAt|date('d/m/Y') }}</div>
+            <div class="muted">Date : {{ maintenance.createdAt|date('d/m/Y') }}</div>
         </td>
     </tr>
 </table>
@@ -56,21 +58,25 @@
 <table class="boxes">
     <tr>
         <td>
-            <div class="box-title">Billed to</div>
+            <div class="box-title">Facturé à</div>
             {% if client %}
                 <strong>{{ client.fullname }}</strong><br>
                 {{ client.email }}<br>
-                Tel: {{ client.phone }}
+                Tél : {{ client.phone }}
+                {% if client.fiscalID != null %}
+                    <br />
+                    <strong>MF :</strong> {{ client.fiscalID }}
+                {% endif %}
             {% else %}
                 <span class="muted">—</span>
             {% endif %}
         </td>
         <td>
-            <div class="box-title">Motorcycle</div>
+            <div class="box-title">Motocyclette</div>
             <strong>{{ bike.make.label }} {{ bike.model }}</strong> ({{ bike.year }})<br>
-            Plate: {{ bike.plate }}<br>
-            VIN: {{ bike.vin }}<br>
-            {{ bike.cc }} cc · {{ bike.mileage|number_format(0, '.', ' ') }} km
+            Immatriculation : MOTO {{ bike.plate }}<br>
+            N° de châssis : {{ bike.vin }}<br>
+            {{ bike.cc }} cm³ · {{ bike.mileage|number_format(0, '.', ' ') }} km
         </td>
     </tr>
 </table>
@@ -79,9 +85,9 @@
     <thead>
     <tr>
         <th>#</th>
-        <th>Description</th>
-        <th class="num">Qty</th>
-        <th class="num">Unit price HT (TND)</th>
+        <th>Désignation</th>
+        <th class="num">Qté</th>
+        <th class="num">Prix unitaire HT (TND)</th>
         <th class="num">Total HT (TND)</th>
     </tr>
     </thead>
@@ -89,7 +95,7 @@
     {% for line in maintenance.lines %}
         <tr>
             <td>{{ loop.index }}</td>
-            <td>{{ line.label }}{% if line.isProduct %} <span class="muted">(product)</span>{% endif %}</td>
+            <td>{{ line.label }}{% if line.isProduct %} <span class="muted">(produit)</span>{% endif %}</td>
             <td class="num">{{ line.quantity }}</td>
             <td class="num">{{ line.price|number_format(3, '.', ' ') }}</td>
             <td class="num">{{ line.total|number_format(3, '.', ' ') }}</td>
@@ -104,7 +110,7 @@
         <td class="num">{{ totals.totalHt|number_format(3, '.', ' ') }} TND</td>
     </tr>
     <tr>
-        <td>TVA ({{ totals.tvaRate|number_format(totals.tvaRate == totals.tvaRate|round ? 0 : 2, '.', ' ') }}%)</td>
+        <td>TVA ({{ totals.tvaRate|number_format(totals.tvaRate == totals.tvaRate|round ? 0 : 2, '.', ' ') }} %)</td>
         <td class="num">{{ totals.tvaAmount|number_format(3, '.', ' ') }} TND</td>
     </tr>
     <tr>
@@ -112,7 +118,7 @@
         <td class="num">{{ (totals.totalHt + totals.tvaAmount)|number_format(3, '.', ' ') }} TND</td>
     </tr>
     <tr>
-        <td>Timbre fiscal</td>
+        <td>Droit de timbre</td>
         <td class="num">{{ totals.timbreFiscal|number_format(3, '.', ' ') }} TND</td>
     </tr>
     <tr class="grand">
@@ -122,25 +128,28 @@
 </table>
 
 <div class="arrete">
-    Arrêtée la présente facture à la somme de : <strong>{{ amountInWords|capitalize }}</strong>.
+    Arrêtée la présente facture à la somme de :
+    <strong>{{ amountInWords|capitalize }}</strong>.
 </div>
 
 {% if company.bank_name or company.rib %}
     <div class="legal">
         <strong>Coordonnées bancaires :</strong>
         {% if company.bank_name %}{{ company.bank_name }}{% endif %}
-        {% if company.rib %} — RIB: {{ company.rib }}{% endif %}
+        {% if company.rib %} — RIB : {{ company.rib }}{% endif %}
     </div>
 {% endif %}
 
 {% if maintenance.note %}
     <div class="note">
-        <div class="box-title">Note</div>
+        <div class="box-title">Remarque</div>
         {{ maintenance.note|nl2br }}
     </div>
 {% endif %}
 
-<div class="footer">Thank you for your trust — {{ company.name }}{% if company.tagline %} {{ company.tagline }}{% endif %}</div>
+<div class="footer">
+    Merci de votre confiance — {{ company.name }}{% if company.tagline %} {{ company.tagline }}{% endif %}
+</div>
 
 </body>
 </html>

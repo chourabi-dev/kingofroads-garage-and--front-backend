@@ -61,6 +61,9 @@ class Product
     #[ORM\ManyToOne(inversedBy: 'products')]
     private ?Brand $brand = null;
 
+    #[ORM\Column]
+    private ?float $initPrice = null;
+
     public function __construct()
     {
         $this->sizes = new ArrayCollection();
@@ -254,6 +257,18 @@ class Product
     public function setBrand(?Brand $brand): static
     {
         $this->brand = $brand;
+
+        return $this;
+    }
+
+    public function getInitPrice(): ?float
+    {
+        return $this->initPrice;
+    }
+
+    public function setInitPrice(float $initPrice): static
+    {
+        $this->initPrice = $initPrice;
 
         return $this;
     }
